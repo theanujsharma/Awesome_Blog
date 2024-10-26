@@ -1,0 +1,41 @@
+name: Artifacts and Outputs Demo
+
+on:
+  workflow_dispatch:
+
+jobs:
+  generate_artifact_and_output:
+    runs-on: ubuntu-latest
+    outputs:
+      message: ${{ steps.generate_output.outputs.message }}
+    steps:
+      - name: Generate an output file
+        run: echo "This is a demo artifact file" > artifact_file.txt
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4 # Updated to v4
+        with:
+          name: demo-artifact
+          path: artifact_file.txt
+
+      - name: Generate output for next job
+        id: generate_output
+        run: |
+          echo "Hello from the first job!" > message.txt
+          echo "message=$(cat message.txt)" >> $GITHUB_ENV # Use environment file for output
+
+  use_output_and_artifact:
+    runs-on: ubuntu-latest
+    needs: generate_artifact_and_output
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v4 # Updated to v4
+        with:
+          name: demo-artifact
+          path: ./downloaded_artifacts
+
+      - name: Show artifact content
+        run: cat ./downloaded_artifacts/artifact_file.txt
+
+      - name: Display output from previous job
+        run: echo "${{ needs.generate_artifact_and_output.outputs.message }}"
